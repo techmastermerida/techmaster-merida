@@ -21,6 +21,7 @@ export default function OrdenDetalle() {
   const [editEstado,   setEditEstado]   = useState(false)
   const [nuevoEstado,  setNuevoEstado]  = useState('')
   const [notaEstado,   setNotaEstado]   = useState('')
+  const [garantia,     setGarantia]     = useState('')
 
   const [editPartidas, setEditPartidas] = useState(false)
   const [items, setItems] = useState([])
@@ -54,13 +55,18 @@ export default function OrdenDetalle() {
   }
 
   const saveEstado = async () => {
-    await supabase.from('ordenes').update({ estado: nuevoEstado }).eq('id', id)
+    const updateData = { estado: nuevoEstado }
+    if (nuevoEstado === 'Listo' && garantia.trim()) {
+      updateData.garantia = garantia.trim()
+    }
+    await supabase.from('ordenes').update(updateData).eq('id', id)
     if (notaEstado.trim()) {
       await supabase.from('historial').insert({ orden_id: id, estado: nuevoEstado, nota: notaEstado })
     }
     toast('Estado actualizado ✓','success')
     setEditEstado(false)
     setNotaEstado('')
+    setGarantia('')
     load()
   }
 
@@ -91,7 +97,7 @@ export default function OrdenDetalle() {
     const win = window.open('', '_blank', 'width=800,height=900')
     win.document.write(buildNotaHTML(orden, partidas, total))
     win.document.close()
-    setTimeout(() => win.print(), 500)
+    setTimeout(() => win.print(), 800)
   }
 
   if (loading) return <div style={{padding:40,color:'var(--brand-muted)'}}>Cargando…</div>
@@ -274,6 +280,18 @@ export default function OrdenDetalle() {
                 <label>Nota (opcional)</label>
                 <textarea value={notaEstado} onChange={e => setNotaEstado(e.target.value)} placeholder="Ej. Se esperan refacciones…" rows={3} style={{minHeight:70}} />
               </div>
+              {nuevoEstado === 'Listo' && (
+                <div className="field">
+                  <label>Garantía (opcional)</label>
+                  <input
+                    type="text"
+                    value={garantia}
+                    onChange={e => setGarantia(e.target.value)}
+                    placeholder="Ej. 3 meses en mano de obra, 6 meses en refacciones…"
+                  />
+                  <span style={{fontSize:'.78rem',color:'var(--brand-muted)',marginTop:4,display:'block'}}>Se mostrará en la nota de servicio.</span>
+                </div>
+              )}
             </div>
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={() => setEditEstado(false)}>Cancelar</button>
@@ -314,7 +332,7 @@ function buildNotaHTML(orden, partidas, total) {
 <title>Nota de Servicio ${orden.folio}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;900&family=Orbitron:wght@700;900&display=swap');
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
   body { font-family: 'DM Sans', Arial, sans-serif; font-size: 12px; color: #1a1a1a; background: #fff; padding: 28px; }
 
   /* ── ENCABEZADO ── */
@@ -322,7 +340,9 @@ function buildNotaHTML(orden, partidas, total) {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #111;
+    background: #111 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
     border-radius: 12px;
     padding: 18px 24px;
     margin-bottom: 20px;
@@ -332,7 +352,6 @@ function buildNotaHTML(orden, partidas, total) {
     align-items: center;
     gap: 16px;
   }
-  /* Hexágono SVG inline como logo placeholder */
   .logo-icon {
     width: 56px;
     height: 56px;
@@ -349,30 +368,28 @@ function buildNotaHTML(orden, partidas, total) {
     letter-spacing: .04em;
     line-height: 1;
   }
-  .brand-name .tech { color: #fff; }
-  .brand-name .master { color: #e41c1c; }
+  .brand-name .tech { color: #fff !important; }
+  .brand-name .master { color: #e41c1c !important; }
   .brand-sub {
     font-size: 9px;
-    color: #888;
+    color: #888 !important;
     letter-spacing: .18em;
     text-transform: uppercase;
     margin-top: 4px;
   }
   .brand-tagline {
     font-size: 10px;
-    color: #aaa;
+    color: #aaa !important;
     margin-top: 6px;
     border-top: 1px solid #2a2a2a;
     padding-top: 5px;
   }
 
   /* Folio box */
-  .folio-box {
-    text-align: right;
-  }
+  .folio-box { text-align: right; }
   .nota-label {
     font-size: 9px;
-    color: #888;
+    color: #888 !important;
     text-transform: uppercase;
     letter-spacing: .15em;
     margin-bottom: 4px;
@@ -381,19 +398,19 @@ function buildNotaHTML(orden, partidas, total) {
     font-family: 'Orbitron', monospace;
     font-size: 22px;
     font-weight: 900;
-    color: #e41c1c;
+    color: #e41c1c !important;
     letter-spacing: .05em;
   }
   .folio-meta {
     font-size: 10px;
-    color: #aaa;
+    color: #aaa !important;
     margin-top: 6px;
     line-height: 1.7;
   }
   .estado-badge {
     display: inline-block;
-    background: #e41c1c;
-    color: #fff;
+    background: #e41c1c !important;
+    color: #fff !important;
     font-size: 9px;
     font-weight: 700;
     text-transform: uppercase;
@@ -406,7 +423,7 @@ function buildNotaHTML(orden, partidas, total) {
   /* ── FRANJA ROJA ── */
   .red-bar {
     height: 3px;
-    background: linear-gradient(90deg, #e41c1c, #ff4444, #e41c1c);
+    background: linear-gradient(90deg, #e41c1c, #ff4444, #e41c1c) !important;
     border-radius: 2px;
     margin-bottom: 18px;
   }
@@ -414,7 +431,7 @@ function buildNotaHTML(orden, partidas, total) {
   /* ── SECCIONES ── */
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
   .section {
-    background: #f9f9f9;
+    background: #f9f9f9 !important;
     border: 1px solid #eee;
     border-radius: 8px;
     padding: 12px 14px;
@@ -424,20 +441,20 @@ function buildNotaHTML(orden, partidas, total) {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .15em;
-    color: #e41c1c;
+    color: #e41c1c !important;
     margin-bottom: 8px;
     padding-bottom: 5px;
     border-bottom: 1px solid #eee;
   }
   .row { display: flex; gap: 6px; margin-bottom: 5px; align-items: flex-start; }
-  .row .lbl { font-size: 9px; font-weight: 700; color: #999; text-transform: uppercase; min-width: 72px; padding-top: 1px; }
-  .row .val { font-size: 11px; color: #111; flex: 1; }
+  .row .lbl { font-size: 9px; font-weight: 700; color: #999 !important; text-transform: uppercase; min-width: 72px; padding-top: 1px; }
+  .row .val { font-size: 11px; color: #111 !important; flex: 1; }
 
   /* ── DESCRIPCIONES ── */
   .desc-box {
-    background: #f9f9f9;
+    background: #f9f9f9 !important;
     border: 1px solid #eee;
-    border-left: 3px solid #e41c1c;
+    border-left: 3px solid #e41c1c !important;
     border-radius: 8px;
     padding: 12px 14px;
     margin-bottom: 14px;
@@ -447,14 +464,14 @@ function buildNotaHTML(orden, partidas, total) {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .15em;
-    color: #e41c1c;
+    color: #e41c1c !important;
     margin-bottom: 6px;
   }
-  .desc-box p { font-size: 11px; color: #333; line-height: 1.65; }
+  .desc-box p { font-size: 11px; color: #333 !important; line-height: 1.65; }
 
   /* ── TABLA COBROS ── */
   .cobros-section {
-    background: #f9f9f9;
+    background: #f9f9f9 !important;
     border: 1px solid #eee;
     border-radius: 8px;
     padding: 12px 14px;
@@ -465,15 +482,15 @@ function buildNotaHTML(orden, partidas, total) {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .15em;
-    color: #e41c1c;
+    color: #e41c1c !important;
     margin-bottom: 10px;
     padding-bottom: 5px;
     border-bottom: 1px solid #eee;
   }
   table { width: 100%; border-collapse: collapse; }
   thead th {
-    background: #e41c1c;
-    color: #fff;
+    background: #e41c1c !important;
+    color: #fff !important;
     padding: 7px 10px;
     font-size: 8px;
     text-transform: uppercase;
@@ -485,11 +502,30 @@ function buildNotaHTML(orden, partidas, total) {
   .total-row td {
     font-weight: 700;
     font-size: 13px;
-    color: #e41c1c;
-    background: #fff0f0;
+    color: #e41c1c !important;
+    background: #fff0f0 !important;
     padding: 10px;
-    border-top: 2px solid #e41c1c;
+    border-top: 2px solid #e41c1c !important;
   }
+
+  /* ── GARANTÍA ── */
+  .garantia-box {
+    background: #fff8e1 !important;
+    border: 1px solid #ffe082;
+    border-left: 3px solid #f59e0b !important;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .garantia-box h3 {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .15em;
+    color: #b45309 !important;
+    margin-bottom: 6px;
+  }
+  .garantia-box p { font-size: 11px; color: #333 !important; line-height: 1.65; }
 
   /* ── FIRMA ── */
   .firma-grid {
@@ -504,7 +540,7 @@ function buildNotaHTML(orden, partidas, total) {
     padding-top: 8px;
     text-align: center;
     font-size: 9px;
-    color: #999;
+    color: #999 !important;
     text-transform: uppercase;
     letter-spacing: .1em;
   }
@@ -517,11 +553,23 @@ function buildNotaHTML(orden, partidas, total) {
     border-top: 1px solid #eee;
     padding-top: 10px;
     font-size: 9px;
-    color: #aaa;
+    color: #aaa !important;
   }
-  .footer .fb { color: #e41c1c; font-weight: 700; }
+  .footer .brand-link { color: #e41c1c !important; font-weight: 700; }
 
-  @media print { body { padding: 14px; } }
+  @media print {
+    body { padding: 14px; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .header { background: #111 !important; }
+    .estado-badge { background: #e41c1c !important; color: #fff !important; }
+    thead th { background: #e41c1c !important; color: #fff !important; }
+    .total-row td { background: #fff0f0 !important; color: #e41c1c !important; }
+    .garantia-box { background: #fff8e1 !important; }
+    .red-bar { background: linear-gradient(90deg, #e41c1c, #ff4444, #e41c1c) !important; }
+    .section { background: #f9f9f9 !important; }
+    .desc-box { background: #f9f9f9 !important; }
+    .cobros-section { background: #f9f9f9 !important; }
+  }
 </style>
 </head>
 <body>
@@ -529,12 +577,10 @@ function buildNotaHTML(orden, partidas, total) {
 <!-- ENCABEZADO -->
 <div class="header">
   <div class="brand">
-    <!-- Logo SVG TechMaster (hexágono + T) -->
     <svg class="logo-icon" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
       <polygon points="28,2 52,15 52,41 28,54 4,41 4,15" fill="#e41c1c" opacity=".15"/>
       <polygon points="28,6 49,17.5 49,38.5 28,50 7,38.5 7,17.5" fill="none" stroke="#e41c1c" stroke-width="1.5"/>
       <text x="28" y="36" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="22" font-weight="900" fill="#e41c1c">T</text>
-      <!-- circuito decorativo -->
       <circle cx="46" cy="24" r="2" fill="#e41c1c" opacity=".7"/>
       <circle cx="46" cy="32" r="2" fill="#e41c1c" opacity=".7"/>
       <line x1="44" y1="24" x2="40" y2="24" stroke="#e41c1c" stroke-width="1" opacity=".5"/>
@@ -617,6 +663,13 @@ ${partidas.length > 0 ? `
   </table>
 </div>` : ''}
 
+<!-- GARANTÍA -->
+${orden.garantia ? `
+<div class="garantia-box">
+  <h3>🛡️ Garantía del servicio</h3>
+  <p>${orden.garantia}</p>
+</div>` : ''}
+
 <!-- FIRMAS -->
 <div class="firma-grid">
   <div class="firma-box">Firma del técnico</div>
@@ -625,10 +678,11 @@ ${partidas.length > 0 ? `
 
 <!-- FOOTER -->
 <div class="footer">
-  <span>📍 Mérida, Yucatán &nbsp;|&nbsp; <span class="fb">facebook.com/techmastermerida</span> &nbsp;|&nbsp; Servicio a domicilio y remoto</span>
+  <span>📍 Mérida, Yucatán &nbsp;|&nbsp; <span class="brand-link">facebook.com/techmastermerida</span> &nbsp;|&nbsp; <span class="brand-link">@techmastermerida</span> &nbsp;|&nbsp; 📱 <span class="brand-link">999 768 5535</span> &nbsp;|&nbsp; Servicio a domicilio y remoto</span>
   <span>Generado: ${new Date().toLocaleString('es-MX')}</span>
 </div>
 
 </body>
 </html>`
 }
+
